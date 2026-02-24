@@ -23,7 +23,7 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
   String productGrade = "95";
   String season = "Summer"; 
 
-  double totalLevel = 0.0, ethyl135 = 0.0, finalDen = 0.0, finalAr = 0.0, 
+  double totalLevel = 0.0, avgOct = 0.0, ethyl135 = 0.0, finalDen = 0.0, finalAr = 0.0, 
          finalBen = 0.0, finalRvp = 0.0, finalOle = 0.0, finalS = 0.0, finalSens = 0.0;
 
   @override
@@ -99,6 +99,7 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
         double rvp = double.tryParse(r["rvp"]!.text) ?? 0;
         if (rvp > 0) rvpSum += ratio * pow(rvp, 1.25);
       }
+      avgOct = wOct; // Volume Average Octane
       ethyl135 = wOct + (0.03324 * (sumRJ - (wOct * wSens))) + (0.00085 * (sumO2 - pow(wOle, 2)));
     }
     setState(() {
@@ -131,19 +132,23 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
       appBar: AppBar(
         toolbarHeight: 50,
         backgroundColor: Colors.blueGrey[900],
-        title: Text("Gas Pro Blending", style: TextStyle(fontSize: 14)),
-        actions: [
-          DropdownButton<String>(
+        centerTitle: true,
+        title: Text("Gasoline Blender Tool", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: DropdownButton<String>(
             value: season, underline: Container(),
-            items: ["Summer", "Winter"].map((s) => DropdownMenuItem(value: s, child: Text(s, style: TextStyle(fontSize: 12)))).toList(),
+            items: ["Summer", "Winter"].map((s) => DropdownMenuItem(value: s, child: Text(s, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)))).toList(),
             onChanged: (v) { setState(() => season = v!); _saveData(); },
           ),
+        ),
+        actions: [
           DropdownButton<String>(
             value: productGrade, underline: Container(),
-            items: ["92", "95"].map((s) => DropdownMenuItem(value: s, child: Text(" G-$s ", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)))).toList(),
+            items: ["92", "95"].map((s) => DropdownMenuItem(value: s, child: Text("G-$s", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orangeAccent)))).toList(),
             onChanged: (v) { setState(() => productGrade = v!); _saveData(); },
           ),
-          IconButton(icon: Icon(Icons.print, color: Colors.orangeAccent), onPressed: _showRecipeDialog),
+          IconButton(icon: Icon(Icons.print, color: Colors.greenAccent), onPressed: _showRecipeDialog),
         ],
       ),
       body: SafeArea(
@@ -152,39 +157,35 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
             children: [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width),
-                  child: DataTable(
-                    columnSpacing: 8, horizontalMargin: 5, headingRowHeight: 40, dataRowHeight: 32,
-                    headingRowColor: MaterialStateProperty.all(Colors.blueGrey[800]),
-                    border: TableBorder.all(color: Colors.grey[800]!),
-                    columns: ['Tanks', 'Prod.', 'level', 'OCT', 'Sens.', 'Dens', 'AR%', 'Ben%', 'Ole%', 'S%', 'RVP']
-                        .map((h) => DataColumn(label: Text(h, style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold)))).toList(),
-                    rows: [
-                      ...rowsData.map((row) => DataRow(cells: [
-                        _inputCell(row['tank']!, 40, true), _inputCell(row['prod']!, 50, true),
-                        _inputCell(row['level']!, 40, false), _inputCell(row['oct']!, 35, false),
-                        _inputCell(row['sens']!, 30, false), _inputCell(row['den']!, 50, false),
-                        _inputCell(row['ar']!, 30, false), _inputCell(row['ben']!, 30, false),
-                        _inputCell(row['ole']!, 30, false), _inputCell(row['s']!, 30, false),
-                        _inputCell(row['rvp']!, 40, false),
-                      ])).toList(),
-                      // صف الحسابات النهائي
-                      DataRow(color: MaterialStateProperty.all(Colors.blueGrey[900]), cells: [
-                        DataCell(Text("FINAL", style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 8))),
-                        DataCell(Text(productGrade, style: TextStyle(fontSize: 8))),
-                        DataCell(Text(totalLevel.toStringAsFixed(0), style: TextStyle(fontSize: 8))),
-                        DataCell(_specBox(ethyl135.toStringAsFixed(1), _getSpecColor("OCT", ethyl135))),
-                        DataCell(Text(finalSens.toStringAsFixed(1), style: TextStyle(fontSize: 8))),
-                        DataCell(Text(finalDen.toStringAsFixed(4), style: TextStyle(fontSize: 8))),
-                        DataCell(_specBox(finalAr.toStringAsFixed(1), _getSpecColor("AR", finalAr))),
-                        DataCell(_specBox(finalBen.toStringAsFixed(2), _getSpecColor("BEN", finalBen))),
-                        DataCell(Text(finalOle.toStringAsFixed(1), style: TextStyle(fontSize: 8))),
-                        DataCell(Text(finalS.toStringAsFixed(0), style: TextStyle(fontSize: 8))),
-                        DataCell(_specBox(finalRvp.toStringAsFixed(2), _getSpecColor("RVP", finalRvp))),
-                      ]),
-                    ],
-                  ),
+                child: DataTable(
+                  columnSpacing: 8, horizontalMargin: 4, headingRowHeight: 40, dataRowHeight: 32,
+                  headingRowColor: MaterialStateProperty.all(Colors.blueGrey[800]),
+                  border: TableBorder.all(color: Colors.grey[800]!),
+                  columns: ['Tanks', 'Prod.', 'level', 'OCT', 'Sens.', 'Dens', 'AR%', 'Ben%', 'Ole%', 'S%', 'RVP']
+                      .map((h) => DataColumn(label: Text(h, style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold)))).toList(),
+                  rows: [
+                    ...rowsData.map((row) => DataRow(cells: [
+                      _inputCell(row['tank']!, 45, true), _inputCell(row['prod']!, 55, true),
+                      _inputCell(row['level']!, 40, false), _inputCell(row['oct']!, 35, false),
+                      _inputCell(row['sens']!, 30, false), _inputCell(row['den']!, 45, false),
+                      _inputCell(row['ar']!, 30, false), _inputCell(row['ben']!, 30, false),
+                      _inputCell(row['ole']!, 30, false), _inputCell(row['s']!, 30, false),
+                      _inputCell(row['rvp']!, 40, false),
+                    ])).toList(),
+                    DataRow(color: MaterialStateProperty.all(Colors.blueGrey[900]), cells: [
+                      DataCell(Text("FINAL", style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 8))),
+                      DataCell(Text("BLENDING", style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold))),
+                      DataCell(Text(totalLevel.toStringAsFixed(0), style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold))),
+                      DataCell(_specBox(avgOct.toStringAsFixed(1), _getSpecColor("OCT", avgOct))), // Volume Average Octane
+                      DataCell(Text(finalSens.toStringAsFixed(1), style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold))),
+                      DataCell(Text(finalDen.toStringAsFixed(4), style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold))),
+                      DataCell(_specBox(finalAr.toStringAsFixed(1), _getSpecColor("AR", finalAr))),
+                      DataCell(_specBox(finalBen.toStringAsFixed(2), _getSpecColor("BEN", finalBen))),
+                      DataCell(Text(finalOle.toStringAsFixed(1), style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold))),
+                      DataCell(Text(finalS.toStringAsFixed(0), style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold))),
+                      DataCell(_specBox(finalRvp.toStringAsFixed(2), _getSpecColor("RVP", finalRvp))),
+                    ]),
+                  ],
                 ),
               ),
               _buildDashboard(),
@@ -214,19 +215,19 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
   }
 
   Widget _dashItem(String label, String val, Color col) => Column(children: [
-    Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 8)),
+    Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 8, fontWeight: FontWeight.bold)),
     Text(val, style: TextStyle(color: col, fontSize: 13, fontWeight: FontWeight.bold)),
   ]);
 
   Widget _specBox(String t, Color c) => Container(
     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-    decoration: BoxDecoration(color: c.withOpacity(0.1), border: Border.all(color: c, width: 0.5)),
-    child: Text(t, style: TextStyle(color: c, fontSize: 8, fontWeight: FontWeight.bold)),
+    decoration: BoxDecoration(color: c.withOpacity(0.1), border: Border.all(color: c, width: 0.8)),
+    child: Text(t, style: TextStyle(color: c, fontSize: 8.5, fontWeight: FontWeight.bold)),
   );
 
   DataCell _inputCell(TextEditingController c, double w, bool isTxt) => DataCell(
     Container(width: w, child: TextField(
-      controller: c, textAlign: TextAlign.center, style: TextStyle(fontSize: 9),
+      controller: c, textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
       keyboardType: isTxt ? TextInputType.text : TextInputType.number,
       decoration: InputDecoration(border: InputBorder.none),
     )),
@@ -238,15 +239,19 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
       content: Screenshot(
         controller: screenshotController,
         child: Container(
-          width: 500, color: Colors.white, padding: EdgeInsets.all(15),
+          width: 500, color: Colors.white, padding: EdgeInsets.all(18),
           child: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Text("GASOLINE BLENDING RECIPE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
-              Text("Specification Report", style: TextStyle(color: Colors.blue[900], fontSize: 10, fontWeight: FontWeight.bold)),
-              Divider(color: Colors.black45),
+              Text("G-$productGrade Specification Report", style: TextStyle(color: Colors.blue[900], fontSize: 11, fontWeight: FontWeight.bold)),
+              Divider(color: Colors.black45, thickness: 1.5),
               _recipeTable(),
               SizedBox(height: 15),
               _recipeInfoBox(),
+              SizedBox(height: 25),
+              Divider(color: Colors.black26),
+              Align(alignment: Alignment.centerRight, child: Text("ANRPC Production Planning Team", style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold))),
+              Align(alignment: Alignment.centerRight, child: Text("App by Mohammed Nofal", style: TextStyle(color: Colors.blueGrey, fontSize: 8, fontStyle: FontStyle.italic))),
             ]),
           ),
         ),
@@ -256,7 +261,7 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
   }
 
   Widget _recipeTable() => Table(
-    border: TableBorder.all(color: Colors.black26),
+    border: TableBorder.all(color: Colors.black45),
     children: [
       TableRow(decoration: BoxDecoration(color: Colors.grey[300]), children: [_th("Tanks"), _th("Prod."), _th("Level"), _th("OCT")]),
       ...rowsData.where((r) => (double.tryParse(r['level']!.text) ?? 0) > 0).map((r) => TableRow(
@@ -266,20 +271,22 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
   );
 
   Widget _recipeInfoBox() => Container(
-    padding: EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(5), border: Border.all(color: Colors.grey[300]!)),
+    padding: EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(5), border: Border.all(color: Colors.grey[300]!)),
     child: Column(children: [
-      _rRow("Ethyl Octane", ethyl135.toStringAsFixed(2)),
+      _rRow("Ethyl Octane (Calculated)", ethyl135.toStringAsFixed(2)),
+      _rRow("Vol. Avg. Octane", avgOct.toStringAsFixed(1)),
       _rRow("Density @15C", finalDen.toStringAsFixed(4)),
       _rRow("Aromatics %", finalAr.toStringAsFixed(1)),
       _rRow("Benzene %", finalBen.toStringAsFixed(2)),
-      _rRow("RVP", finalRvp.toStringAsFixed(2)),
-      _rRow("Total Batch Level", "${totalLevel.toStringAsFixed(0)} cm"),
+      _rRow("RVP ($season)", finalRvp.toStringAsFixed(2)),
+      Divider(),
+      _rRow("Total Batch Level", "${totalLevel.toStringAsFixed(0)} cm", isBold: true),
     ]),
   );
 
-  Widget _rRow(String l, String v) => Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(l, style: TextStyle(color: Colors.black87, fontSize: 10)), Text(v, style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold))]));
-  Widget _th(String t) => Padding(padding: EdgeInsets.all(4), child: Text(t, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 9), textAlign: TextAlign.center));
-  Widget _td(String t) => Padding(padding: EdgeInsets.all(4), child: Text(t, style: TextStyle(color: Colors.black, fontSize: 9), textAlign: TextAlign.center));
+  Widget _rRow(String l, String v, {bool isBold = false}) => Padding(padding: const EdgeInsets.symmetric(vertical: 2.5), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(l, style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)), Text(v, style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold))]));
+  Widget _th(String t) => Padding(padding: EdgeInsets.all(5), child: Text(t, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 10), textAlign: TextAlign.center));
+  Widget _td(String t) => Padding(padding: EdgeInsets.all(5), child: Text(t, style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w500), textAlign: TextAlign.center));
 
   void _saveImg() async {
     final image = await screenshotController.capture();

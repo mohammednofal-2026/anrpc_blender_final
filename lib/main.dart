@@ -54,25 +54,20 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
       for (var r in rowsData) {
         double l = double.tryParse(r["level"]!.text) ?? 0;
         double ratio = l / tLvl;
-        double oct = double.tryParse(r["oct"]!.text) ?? 0;
-        double sens = double.tryParse(r["sens"]!.text) ?? 0;
-        double ole = double.tryParse(r["ole"]!.text) ?? 0;
-
-        wOct += ratio * oct;
-        wSens += ratio * sens;
+        wOct += ratio * (double.tryParse(r["oct"]!.text) ?? 0);
+        wSens += ratio * (double.tryParse(r["sens"]!.text) ?? 0);
         wDen += ratio * (double.tryParse(r["den"]!.text) ?? 0);
         wAr += ratio * (double.tryParse(r["ar"]!.text) ?? 0);
         wBen += ratio * (double.tryParse(r["ben"]!.text) ?? 0);
-        wOle += ratio * ole;
+        wOle += ratio * (double.tryParse(r["ole"]!.text) ?? 0);
         wS += ratio * (double.tryParse(r["s"]!.text) ?? 0);
-        sumRJ += ratio * oct * sens;
-        sumO2 += ratio * pow(ole, 2);
+        sumRJ += ratio * (double.tryParse(r["oct"]!.text) ?? 0) * (double.tryParse(r["sens"]!.text) ?? 0);
+        sumO2 += ratio * pow((double.tryParse(r["ole"]!.text) ?? 0), 2);
         double rvp = double.tryParse(r["rvp"]!.text) ?? 0;
         if (rvp > 0) rvpSum += ratio * pow(rvp, 1.25);
       }
       ethyl135 = wOct + (0.03324 * (sumRJ - (wOct * wSens))) + (0.00085 * (sumO2 - pow(wOle, 2)));
     }
-
     setState(() {
       totalLevel = tLvl; finalSens = wSens; finalDen = wDen;
       finalAr = wAr; finalBen = wBen; finalOle = wOle; finalS = wS;
@@ -82,27 +77,22 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
 
   Color _getSpecColor(String type, double val) {
     double rvpLimit = (season == "Summer") ? 0.63 : 0.72;
-    
     if (productGrade == "95") {
-      switch (type) {
-        case "OCT": return val >= 95 ? Colors.greenAccent : Colors.redAccent;
-        case "SENS": return val >= 10 ? Colors.greenAccent : Colors.redAccent;
-        case "S": return val <= 10 ? Colors.greenAccent : Colors.redAccent;
-        case "BEN": return val <= 1.0 ? Colors.greenAccent : Colors.redAccent;
-        case "AR": return val <= 42 ? Colors.greenAccent : Colors.redAccent;
-        case "OLE": return val <= 18 ? Colors.greenAccent : Colors.redAccent;
-        case "RVP": return val <= rvpLimit ? Colors.greenAccent : Colors.redAccent;
-      }
-    } else { // Grade 92
-      switch (type) {
-        case "OCT": return val >= 92 ? Colors.greenAccent : Colors.redAccent;
-        case "SENS": return val >= 8.1 ? Colors.greenAccent : Colors.redAccent;
-        case "S": return val <= 150 ? Colors.greenAccent : Colors.redAccent;
-        case "BEN": return val <= 3.0 ? Colors.greenAccent : Colors.redAccent;
-        case "AR": return val <= 42 ? Colors.greenAccent : Colors.redAccent;
-        case "OLE": return val <= 18 ? Colors.greenAccent : Colors.redAccent;
-        case "RVP": return val <= rvpLimit ? Colors.greenAccent : Colors.redAccent;
-      }
+      if (type == "OCT") return val >= 95 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "SENS") return val >= 10 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "S") return val <= 10 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "BEN") return val <= 1.0 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "AR") return val <= 42 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "OLE") return val <= 18 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "RVP") return val <= rvpLimit ? Colors.greenAccent : Colors.redAccent;
+    } else {
+      if (type == "OCT") return val >= 92 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "SENS") return val >= 8.1 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "S") return val <= 150 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "BEN") return val <= 3.0 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "AR") return val <= 42 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "OLE") return val <= 18 ? Colors.greenAccent : Colors.redAccent;
+      if (type == "RVP") return val <= rvpLimit ? Colors.greenAccent : Colors.redAccent;
     }
     return Colors.white;
   }
@@ -114,7 +104,7 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
       appBar: AppBar(
         toolbarHeight: 50,
         backgroundColor: Colors.blueGrey[900],
-        title: Text("Gasoline Blending Calculator", style: TextStyle(fontSize: 12)),
+        title: Text("Gas Pro Blending", style: TextStyle(fontSize: 14)),
         actions: [
           DropdownButton<String>(
             value: season,
@@ -128,59 +118,87 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
             items: ["92", "95"].map((s) => DropdownMenuItem(value: s, child: Text(" G-$s ", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)))).toList(),
             onChanged: (v) => setState(() => productGrade = v!),
           ),
-          IconButton(icon: Icon(Icons.receipt_long, color: Colors.orangeAccent, size: 20), onPressed: _showRecipeDialog),
+          IconButton(icon: Icon(Icons.print, color: Colors.orangeAccent), onPressed: _showRecipeDialog),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // 1. جدول المدخلات - Fit for Screen
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: ConstrainedBox(
                 constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width),
                 child: DataTable(
-                  columnSpacing: 8,
-                  horizontalMargin: 5,
+                  columnSpacing: 10,
+                  horizontalMargin: 8,
                   headingRowHeight: 40,
                   dataRowHeight: 32,
                   headingRowColor: MaterialStateProperty.all(Colors.blueGrey[800]),
                   border: TableBorder.all(color: Colors.grey[800]!),
-                  columns: ['Tank', 'Prod', 'Level', 'Oct', 'Sens', 'Ar%', 'Ben%', 'Ole%', 'RVP', 'S']
+                  columns: ['Tank', 'Prod', 'Level', 'Oct', 'Sens', 'Ar%', 'Ben%', 'RVP']
                       .map((h) => DataColumn(label: Text(h, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)))).toList(),
-                  rows: [
-                    ...rowsData.map((row) => DataRow(cells: [
-                      _inputCell(row['tank']!, 45, true), _inputCell(row['prod']!, 55, true),
-                      _inputCell(row['level']!, 40, false), _inputCell(row['oct']!, 35, false),
-                      _inputCell(row['sens']!, 35, false), _inputCell(row['ar']!, 35, false),
-                      _inputCell(row['ben']!, 35, false), _inputCell(row['ole']!, 35, false),
-                      _inputCell(row['rvp']!, 40, false), _inputCell(row['s']!, 35, false),
-                    ])).toList(),
-                    DataRow(color: MaterialStateProperty.all(Colors.blueGrey[900]), cells: [
-                      DataCell(Text("FINAL", style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 9))),
-                      DataCell(Text(productGrade, style: TextStyle(fontSize: 9))),
-                      DataCell(Text(totalLevel.toStringAsFixed(0), style: TextStyle(fontSize: 9))),
-                      DataCell(_specBox(ethyl135.toStringAsFixed(1), _getSpecColor("OCT", ethyl135))),
-                      DataCell(_specBox(finalSens.toStringAsFixed(1), _getSpecColor("SENS", finalSens))),
-                      DataCell(_specBox(finalAr.toStringAsFixed(1), _getSpecColor("AR", finalAr))),
-                      DataCell(_specBox(finalBen.toStringAsFixed(2), _getSpecColor("BEN", finalBen))),
-                      DataCell(_specBox(finalOle.toStringAsFixed(1), _getSpecColor("OLE", finalOle))),
-                      DataCell(_specBox(finalRvp.toStringAsFixed(2), _getSpecColor("RVP", finalRvp))),
-                      DataCell(_specBox(finalS.toStringAsFixed(0), _getSpecColor("S", finalS))),
-                    ]),
-                  ],
+                  rows: rowsData.map((row) => DataRow(cells: [
+                    _inputCell(row['tank']!, 50, true), _inputCell(row['prod']!, 60, true),
+                    _inputCell(row['level']!, 45, false), _inputCell(row['oct']!, 35, false),
+                    _inputCell(row['sens']!, 35, false), _inputCell(row['ar']!, 35, false),
+                    _inputCell(row['ben']!, 35, false), _inputCell(row['rvp']!, 40, false),
+                  ])).toList(),
                 ),
               ),
             ),
+            // 2. الـ FINAL SPECIFICATION Dashboard - نتائج الخلطة كاملة
+            _buildFinalSpecDashboard(),
           ],
         ),
       ),
     );
   }
 
-  Widget _specBox(String t, Color c) => Container(
-    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-    decoration: BoxDecoration(color: c.withOpacity(0.15), border: Border.all(color: c, width: 0.5)),
-    child: Text(t, style: TextStyle(color: c, fontSize: 9, fontWeight: FontWeight.bold)),
+  Widget _buildFinalSpecDashboard() {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.all(10),
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blueGrey[900],
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.orangeAccent.withOpacity(0.5)),
+      ),
+      child: Column(
+        children: [
+          Text("FINAL SPECIFICATION RESULTS", style: TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+          Divider(color: Colors.grey[700], height: 20),
+          _dashboardRow([
+            _dashItem("ETHYL OCT", ethyl135.toStringAsFixed(2), _getSpecColor("OCT", ethyl135)),
+            _dashItem("SENSITIVITY", finalSens.toStringAsFixed(1), _getSpecColor("SENS", finalSens)),
+            _dashItem("DENSITY", finalDen.toStringAsFixed(4), Colors.cyanAccent),
+          ]),
+          SizedBox(height: 15),
+          _dashboardRow([
+            _dashItem("AROMATICS", "${finalAr.toStringAsFixed(1)}%", _getSpecColor("AR", finalAr)),
+            _dashItem("BENZENE", "${finalBen.toStringAsFixed(2)}%", _getSpecColor("BEN", finalBen)),
+            _dashItem("OLEFINS", "${finalOle.toStringAsFixed(1)}%", _getSpecColor("OLE", finalOle)),
+          ]),
+          SizedBox(height: 15),
+          _dashboardRow([
+            _dashItem("RVP", finalRvp.toStringAsFixed(2), _getSpecColor("RVP", finalRvp)),
+            _dashItem("SULFUR", "${finalS.toStringAsFixed(0)} ppm", _getSpecColor("S", finalS)),
+            _dashItem("TOTAL LEVEL", "${totalLevel.toStringAsFixed(0)} cm", Colors.white),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _dashboardRow(List<Widget> children) => Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: children);
+
+  Widget _dashItem(String label, String value, Color col) => Column(
+    children: [
+      Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 8, fontWeight: FontWeight.bold)),
+      SizedBox(height: 4),
+      Text(value, style: TextStyle(color: col, fontSize: 14, fontWeight: FontWeight.black)),
+    ],
   );
 
   DataCell _inputCell(TextEditingController c, double w, bool isTxt) => DataCell(
@@ -195,79 +213,62 @@ class _GasolineProCalculatorState extends State<GasolineProCalculator> {
   void _showRecipeDialog() {
     showDialog(context: context, builder: (context) => AlertDialog(
       backgroundColor: Colors.white,
-      insetPadding: EdgeInsets.all(8),
+      insetPadding: EdgeInsets.all(10),
       content: Screenshot(
         controller: screenshotController,
         child: Container(
-          width: 600,
-          color: Colors.white,
-          padding: EdgeInsets.all(12),
+          width: 500, color: Colors.white, padding: EdgeInsets.all(15),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("GASOLINE BLENDING REPORT", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                Text("GASOLINE BLENDING RECIPE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
                 Text("App by Mohammed Nofal", style: TextStyle(color: Colors.blue[900], fontSize: 10, fontWeight: FontWeight.bold)),
                 Divider(color: Colors.black45),
                 _recipeTable(),
-                SizedBox(height: 12),
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.grey[300]!)),
-                  child: Column(
-                    children: [
-                      Text("FINAL BATCH RESULTS ($productGrade - $season)", style: TextStyle(color: Colors.red[900], fontWeight: FontWeight.bold, fontSize: 10)),
-                      SizedBox(height: 6),
-                      _recipeResultRow("ETHYL OCTANE", ethyl135.toStringAsFixed(2)),
-                      _recipeResultRow("SENSITIVITY", finalSens.toStringAsFixed(1)),
-                      _recipeResultRow("AROMATICS %", finalAr.toStringAsFixed(1)),
-                      _recipeResultRow("BENZENE %", finalBen.toStringAsFixed(2)),
-                      _recipeResultRow("OLEFINS %", finalOle.toStringAsFixed(1)),
-                      _recipeResultRow("SULFUR (ppm)", finalS.toStringAsFixed(1)),
-                      _recipeResultRow("VAPOR PRESSURE (RVP)", finalRvp.toStringAsFixed(2)),
-                      _recipeResultRow("DENSITY @15°C", finalDen.toStringAsFixed(4)),
-                      Divider(),
-                      _recipeResultRow("TOTAL BATCH LEVEL", "${totalLevel.toStringAsFixed(1)} cm"),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text("Generated: ${DateTime.now().toString().substring(0,16)}", style: TextStyle(color: Colors.grey, fontSize: 7)),
+                SizedBox(height: 15),
+                _recipeBox(),
+                SizedBox(height: 10),
+                Text("Date: ${DateTime.now().toString().substring(0,16)}", style: TextStyle(color: Colors.grey, fontSize: 8)),
               ],
             ),
           ),
         ),
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
-        ElevatedButton(onPressed: _saveImg, child: Text("Save to Gallery")),
-      ],
+      actions: [ElevatedButton(onPressed: _saveImg, child: Text("Save to Gallery"))],
     ));
   }
 
-  Widget _recipeTable() {
-    return Table(
-      border: TableBorder.all(color: Colors.black26),
+  Widget _recipeBox() => Container(
+    padding: EdgeInsets.all(10),
+    decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(5), border: Border.all(color: Colors.grey[300]!)),
+    child: Column(
       children: [
-        TableRow(decoration: BoxDecoration(color: Colors.grey[300]), children: [
-          _th("Tank"), _th("Product"), _th("Level"), _th("Oct")
-        ]),
-        ...rowsData.where((r) => (double.tryParse(r['level']!.text) ?? 0) > 0).map((r) => TableRow(
-          children: [_td(r['tank']!.text), _td(r['prod']!.text), _td(r['level']!.text), _td(r['oct']!.text)],
-        )).toList()
+        _recipeResultRow("FINAL ETHYL OCTANE", ethyl135.toStringAsFixed(2)),
+        _recipeResultRow("FINAL SENSITIVITY", finalSens.toStringAsFixed(1)),
+        _recipeResultRow("FINAL AROMATICS %", finalAr.toStringAsFixed(1)),
+        _recipeResultRow("FINAL BENZENE %", finalBen.toStringAsFixed(2)),
+        _recipeResultRow("FINAL OLEFINS %", finalOle.toStringAsFixed(1)),
+        _recipeResultRow("FINAL SULFUR (ppm)", finalS.toStringAsFixed(0)),
+        _recipeResultRow("FINAL RVP", finalRvp.toStringAsFixed(2)),
+        _recipeResultRow("TOTAL BATCH LEVEL", "${totalLevel.toStringAsFixed(1)} cm"),
       ],
-    );
-  }
-
-  Widget _th(String t) => Padding(padding: EdgeInsets.all(3), child: Text(t, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 9), textAlign: TextAlign.center));
-  Widget _td(String t) => Padding(padding: EdgeInsets.all(3), child: Text(t, style: TextStyle(color: Colors.black, fontSize: 9), textAlign: TextAlign.center));
-  Widget _recipeResultRow(String l, String v) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 1.5),
-    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Text(l, style: TextStyle(color: Colors.black87, fontSize: 9, fontWeight: FontWeight.w500)),
-      Text(v, style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
-    ]),
+    ),
   );
+
+  Widget _recipeTable() => Table(
+    border: TableBorder.all(color: Colors.black26),
+    children: [
+      TableRow(decoration: BoxDecoration(color: Colors.grey[300]), children: [_th("Tank"), _th("Prod"), _th("Level"), _th("Oct")]),
+      ...rowsData.where((r) => (double.tryParse(r['level']!.text) ?? 0) > 0).map((r) => TableRow(
+        children: [_td(r['tank']!.text), _td(r['prod']!.text), _td(r['level']!.text), _td(r['oct']!.text)],
+      )).toList()
+    ],
+  );
+
+  Widget _th(String t) => Padding(padding: EdgeInsets.all(4), child: Text(t, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 9), textAlign: TextAlign.center));
+  Widget _td(String t) => Padding(padding: EdgeInsets.all(4), child: Text(t, style: TextStyle(color: Colors.black, fontSize: 9), textAlign: TextAlign.center));
+  Widget _recipeResultRow(String l, String v) => Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(l, style: TextStyle(color: Colors.black87, fontSize: 10)), Text(v, style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold))]);
 
   void _saveImg() async {
     final image = await screenshotController.capture();
